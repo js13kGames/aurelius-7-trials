@@ -21,9 +21,10 @@ function roll(x, m) {
 //for minification purposes
 const sin = Math.sin;
 const cos = Math.cos;
+const max = Math.max;
 const min = Math.min;
 const now = Date.now
 const rand = Math.random
 const abs = Math.abs
 
-export { wrap, randItem, clamp, sin, cos, min, rand, coords, addArrs, roll, now, abs };
+export { wrap, randItem, clamp, sin, cos, min, rand, coords, addArrs, roll, now, abs, max };

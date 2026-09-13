@@ -11,6 +11,7 @@ import {
   clamp,
   coords,
   cos,
+  max,
   min,
   now,
   rand,
@@ -19,25 +20,45 @@ import {
 } from "./utils.js";
 
 let platforms = [];
-while (platforms.length < 500) {
-  platforms.push({ x: platforms.length * 800, y: 300, w: 500, h: 100 });
-}
+// while (platforms.length < 500) {
+//   platforms.push({ x: platforms.length * 800, y: 300, w: 500, h: 100 });
+// }
 // rain is just an array of numbers will be multiplied to range between the left and right side of the screen [454, 39, 21, 505, 368, ...]
 let rain = [];
 while (rain.length < canvas.width / 20) {
   rain.push(rand());
 }
 
+let lives = [];
+let lastDeathTime = 0;
+
+let levelTransStart = now();
 let levels = [
   {
-    d: () => {
+    d() {
       // red river
       ctx.beginPath();
-      ctx.rect(0, 50, canvas.width, canvas.width / 2 - camX);
+      ctx.rect(
+        camX - canvas.width / 2,
+        500,
+        canvas.width,
+        canvas.height / 2 + camY
+      );
       ctx.fillStyle = "#ff5314";
       ctx.fill();
     },
-    p: [],
+    u(n) {
+      if (unicornY >= 450 && n - lastDeathTime > 5000) {
+        lives--;
+        lastDeathTime = n;
+        unicornY = 0;
+        unicornVY = 0;
+      }
+      this.p.forEach((p) => {
+        // p.y += 0.1;
+      });
+    },
+    p: [{ x: 70, y: 300, w: 500, h: 100 }],
     n: ["Red River", "Lava lake"],
   },
 ];
@@ -142,7 +163,8 @@ function animate() {
   unicornY += unicornVY * dt;
   unicornVY += gravity * dt;
   let collided = false;
-  platforms.forEach((platform) => {
+  let onplatform = false;
+  const collide = (platform) => {
     if (
       Math.abs(platform.x - unicornX) <= (platform.w + unicornW) / 2 &&
       Math.abs(platform.y - unicornY) <= (platform.h + unicornH) / 2
@@ -172,12 +194,20 @@ function animate() {
           unicornX += x * v;
           unicornY += y * v;
           unicornVX *= x === 0 ? 0.5 : 0;
-          unicornVY *= y === 0 ? 0.5 : 0;
+          unicornVY *= y === 0 ? 0.99 : 0;
+          if (x === 0) {
+            onplatform = true;
+          }
           // unicornVY *= y/2
         }
       });
     }
-  });
+  };
+  platforms.forEach(collide);
+  levels[level].p.forEach(collide);
+  if (screen === 1) {
+    levels[level].u(n);
+  }
 
   if (!collided && !inair) {
     inair = true;
@@ -198,7 +228,7 @@ function animate() {
     unicornAnimationStartTime = Date.now();
   }
 
-  if (keysDown["w"] && !inair) {
+  if (keysDown["w"] && onplatform) {
     unicornVY = -5;
     unicornAnimationStartTime = Date.now(); // lerp into jumpung anumation
   }
@@ -309,18 +339,21 @@ function animate() {
       break;
     // GAME SCREEN
     case 1:
-      ctx.fillStyle = clean_colors[level];
-      ctx.font = "bold 11px system-ui";
+      ctx.fillStyle = "#" + clean_colors[level];
+      ctx.font = "bold 30px system-ui";
       ctx.textAlign = "start";
       ctx.textBaseline = "top";
       ctx.fillText(
-        "lvl " + level + ": " + levels[level].n[1].toUpperCase(),
+        "lvl " + (level + 1) + ": " + levels[level].n[0].toUpperCase(),
         15,
         15
       );
       (camX = unicornX), (camY = unicornY);
       ctx.save();
-      ctx.translate(canvas.width / 2 - camX, canvas.height / 2 - camY);
+      ctx.translate(
+        canvas.width / 2 - camX,
+        canvas.height / 2 - Math.min(150, camY)
+      );
 
       // ctx.beginPath();
       levels[level].d();
@@ -336,19 +369,42 @@ function animate() {
       });
 
       //running unicorn
-      drawUnicorn(
-        unicornX,
-        unicornY,
-        unicornVX,
-        unicornVY,
-        unicornW,
-        unicornH,
-        unicornRunning,
-        unicornAnimationStartTime,
-        unicornDir,
-        inair
-      );
+      if (n - lastDeathTime > 5000 || (n - lastDeathTime) % 500 < 350) {
+        drawUnicorn(
+          unicornX,
+          unicornY,
+          unicornVX,
+          unicornVY,
+          unicornW,
+          unicornH,
+          unicornRunning,
+          unicornAnimationStartTime,
+          unicornDir,
+          inair
+        );
+      }
+
       ctx.restore();
+      if (n - levelTransStart <= 3000) {
+        ctx.beginPath();
+        ctx.rect(0, 0, canvas.width, canvas.height);
+        ctx.globalAlpha = (1-max((n - levelTransStart-2500) / 500, 0)**2);
+        // console.log(ctx.globalAlpha);
+        
+        ctx.fillStyle = "#000000";
+        ctx.fill();
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.font = '35px monospace'
+        ctx.fillStyle = "white";
+        ctx.fillText(
+          `lvl ${level + 1}: ${levels[level].n[1].toUpperCase()}`,
+          canvas.width / 2,
+          canvas.height / 2
+        );
+        ctx.globalAlpha = 1;
+      }
+
       break;
   }
   // transitioning
@@ -417,5 +473,9 @@ function k(e) {
 addEventListener("click", () => {
   if (screen === 0 && now() - transitionStart >= 3000) {
     transitionTo(1);
+  }
+  if (now()-levelTransStart <=3000) {
+    levelTransStart -= 2500 // fade out
+    
   }
 });

@@ -31,18 +31,18 @@ function drawUnicorn(
   unicornDir,
   unicornInAir
 ) {
-  ctx.beginPath();
-  ctx.rect(
-    unicornX - unicornW / 2,
-    unicornY - unicornH / 2,
-    unicornW,
-    unicornH
-  );
-  ctx.strokeStyle = "#ff0000";
-  ctx.lineWidth = 5;
-  ctx.setLineDash([4, 4]);
-  ctx.stroke();
-  ctx.setLineDash([]);
+  // ctx.beginPath();
+  // ctx.rect(
+  //   unicornX - unicornW / 2,
+  //   unicornY - unicornH / 2,
+  //   unicornW,
+  //   unicornH
+  // );
+  // ctx.strokeStyle = "#ff0000";
+  // ctx.lineWidth = 5;
+  // ctx.setLineDash([4, 4]);
+  // ctx.stroke();
+  // ctx.setLineDash([]);
   ctx.save();
   ctx.translate(unicornX - 127 * unicornDir, unicornY - 60);
   ctx.scale(0.7 * unicornDir, 0.7);
